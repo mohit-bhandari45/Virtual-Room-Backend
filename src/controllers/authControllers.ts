@@ -186,6 +186,7 @@ async function forgotPasswordHandler(req:Request, res:Response) {
     }
 
 }
+
 async function resetPasswordHandler(req:Request,res:Response){
     const {token,newPassword}=req.body;
     try{
@@ -215,4 +216,69 @@ async function resetPasswordHandler(req:Request,res:Response){
     }
 }
 
-export { signUpHandler, loginHandler, refreshHandler, logoutHandler,forgotPasswordHandler, resetPasswordHandler};
+async function changePasswordHandler(req:Request,res:Response) {
+    const userId=req.user?.id;
+    const {oldPass,newPass}=req.body;
+
+    try{
+        const user=await prisma.user.findUnique({
+            where: {id:userId}
+        });
+        if(!user || !user.password){
+            return res.status(400).json({msg:"password change not allowed"});
+        }
+
+        const isValid=await bcrypt.compare(oldPass,user.password);
+        if(!isValid){
+            return res.status(403).json({msg:"old password is incorrect"});
+        }
+        const newHashed=await bcrypt.hash(newPass,10);
+        await prisma.user.update({
+            where:{id:userId},
+            data:{password:newHashed}
+        })
+        return res.status(200).json({ msg: "Password updated successfully" });
+    }catch(error){
+        console.log(error);
+        return res.status(500).json({msg:"Internal server error"});
+    }
+}
+
+async function setPasswordHandler(req: Request, res: Response) {
+  const userId = req.user?.id;
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ msg: "Password must be at least 6 characters" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    const isSocial = user.password === "google-oauth" || user.password === "github-oauth";
+
+    if (!isSocial) {
+      return res.status(409).json({ msg: "Password already exists. Use change-password instead." });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    res.status(200).json({ msg: "Password set successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+}
+
+export { signUpHandler, loginHandler, refreshHandler, logoutHandler,forgotPasswordHandler, resetPasswordHandler, changePasswordHandler, setPasswordHandler};
