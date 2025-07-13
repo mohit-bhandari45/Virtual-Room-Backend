@@ -1,4 +1,4 @@
-import { loginHandler, signUpHandler } from "@/controllers/authControllers";
+import { loginHandler, signUpHandler, refreshHandler, logoutHandler } from "@/controllers/authControllers";
 import { Router } from "express";
 import passport from "passport";
 import { encode } from "@/utils/jwt";
@@ -7,6 +7,8 @@ const router = Router();
 
 router.post("/signup", signUpHandler);
 router.post("/login", loginHandler);
+router.post("/logout",logoutHandler);
+router.post("/refresh", refreshHandler);
 
 router.get(
   "/google",
