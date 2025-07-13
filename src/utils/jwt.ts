@@ -6,6 +6,8 @@ dotenv.config();
 
 const secret: string = process.env.JWT_SECRET as string;
 const REFRESH_SECRET = process.env.REFRESH_SECRET as string;
+const RESET_SECRET = process.env.RESET_SECRET as string;
+
 
 function encode(user: IUser): string {
     const payload = {
@@ -25,4 +27,12 @@ function generateRefreshToken(user: IUser) {
   return jwt.sign({ id: user.id }, REFRESH_SECRET, { expiresIn: "7d" });
 }
 
-export { encode, decode, generateRefreshToken };
+function generateResetToken(email: string) {
+    return jwt.sign({email},RESET_SECRET,{expiresIn:"10min"});
+}
+
+function verifyResetToken(token: string) {
+    return jwt.verify(token, RESET_SECRET) as {email: string};
+}
+
+export { encode, decode, generateRefreshToken,generateResetToken, verifyResetToken };

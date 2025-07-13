@@ -1,7 +1,7 @@
 
 import { Request, Response } from "express";
 import { prisma } from "@/lib/db";
-import { encode,generateRefreshToken } from "@/utils/jwt";
+import { encode,generateRefreshToken,generateResetToken, verifyResetToken } from "@/utils/jwt";
 import bcrypt from "bcrypt";
 import { IResponse, IUser } from "@/types";
 import jwt from "jsonwebtoken";
@@ -157,4 +157,62 @@ function logoutHandler(req:Request,res:Response):void{
     res.status(200).json({msg:"Logged out successfully"});
 }
 
-export { signUpHandler, loginHandler, refreshHandler, logoutHandler};
+async function forgotPasswordHandler(req:Request, res:Response) {
+   const { email } = req.body;
+    try {
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        if (user) {
+        const token = generateResetToken(email);
+        const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+        await prisma.user.update({
+            where: { email },
+            data: {
+            passwordResetToken: token,
+            passwordResetExpires: expires,
+            },
+        });
+
+        const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+        console.log("Reset link:", resetLink);
+        res.status(200).json({ msg: "Reset link sent", resetLink });
+        }
+
+        res.status(200).json({ msg: "If email exists, a reset link has been sent." });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Server error", error });
+    }
+
+}
+async function resetPasswordHandler(req:Request,res:Response){
+    const {token,newPassword}=req.body;
+    try{
+        const {email}=verifyResetToken(token);
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+        if (!user) {
+            return res.status(400).json({ msg: "User not found" });
+        }
+        if(user.passwordResetToken !==token || new Date()>user.passwordResetExpires ) return res.status(400).json({msg: "invalid or expired token"});
+
+        const hashed=await bcrypt.hash(newPassword,10);
+
+        await prisma.user.update({
+            where:{email},
+            data:{
+                password: hashed,
+                passwordResetToken: null,
+                passwordResetExpires: null
+            }
+        });
+        res.status(200).json({msg:"password reset successful"});
+    }catch(error){
+         console.log(error);
+        return res.status(400).json({msg:"Invalid or expired token"});
+    }
+}
+
+export { signUpHandler, loginHandler, refreshHandler, logoutHandler,forgotPasswordHandler, resetPasswordHandler};
