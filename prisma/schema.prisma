@@ -1,0 +1,83 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid()) // faster when integer
+  name      String?
+  username  String?  @unique
+  email     String   @unique
+  password  String
+  avatarURL String?
+  createdAt DateTime @default(now())
+
+  roomsCreated     Room[]            @relation("RoomCreator")
+  roomParticipants RoomParticipant[]
+  roomSessions     RoomSession[]
+  UserStreak       UserStreak?
+}
+
+model UserStreak {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id])
+
+  currentStreak Int      @default(0)
+  maxStreak     Int      @default(0)
+  isActiveToday Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
+model RoomSession {
+  id     String @id @default(uuid())
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  duration  Int?
+  createdAt DateTime @default(now())
+
+  @@index([userId, roomId])
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  isPublic    Boolean
+  active      Boolean
+  duration    Int
+  createdById String
+  createdBy   User     @relation("RoomCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  roomParticipants RoomParticipant[]
+  roomSessions     RoomSession[]
+}
+
+enum ParticipantRole {
+  owner
+  member
+  moderator
+}
+
+model RoomParticipant {
+  id       String          @id @default(uuid())
+  room     Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  role     ParticipantRole @default(member)
+  joinedAt DateTime        @default(now())
+
+  @@unique([roomId, userId])
+}
