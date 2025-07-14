@@ -174,12 +174,11 @@ async function forgotPasswordHandler(req:Request, res:Response) {
             },
         });
 
-        const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+        const resetLink = `http://localhost:3000/auth/reset-password?token=${token}`;
         console.log("Reset link:", resetLink);
         res.status(200).json({ msg: "Reset link sent", resetLink });
         }
 
-        res.status(200).json({ msg: "If email exists, a reset link has been sent." });
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "Server error", error });
