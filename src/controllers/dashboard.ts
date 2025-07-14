@@ -43,17 +43,15 @@ async function getDashBoardHandler(req: Request, res: Response): Promise<void> {
             },
         });
 
-        if(!activity){
-            return;
-        }
-
         /* Fetching all data */
         const focusTime = await fetchFocusTime(user.id);
+
         const streakData: IStreak = {
-            currentStreak: activity.currentStreak,
-            maxStreak: activity.maxStreak,
-            isActiveToday: activity.isActiveToday
+            currentStreak: activity?.currentStreak ?? 0,
+            maxStreak: activity?.maxStreak ?? 0,
+            isActiveToday: activity?.isActiveToday ?? false
         };
+        
         const totalRooms: number = rooms.length;
         /* Data fetching */
 

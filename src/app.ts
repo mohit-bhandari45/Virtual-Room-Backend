@@ -8,7 +8,7 @@ import http from "http";
 import os from "os";
 import startRoomDeactivateCron from "./cron/deactivateRoom";
 import setupSocketIO from "./socket";
-
+import cookieParser from "cookie-parser";
 dotenv.config();
 
 initializePassport();
@@ -18,6 +18,8 @@ const app = express();
 const server = http.createServer(app);
 setupSocketIO(server);
 startRoomDeactivateCron();
+
+app.use(cookieParser());
 
 /* Routes */
 app.get("/", (req, res): void => {

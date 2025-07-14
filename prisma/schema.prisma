@@ -16,6 +16,9 @@ model User {
   avatarURL String?
   createdAt DateTime @default(now())
 
+  passwordResetToken  String? 
+  passwordResetExpires DateTime? 
+
   roomsCreated     Room[]            @relation("RoomCreator")
   roomParticipants RoomParticipant[]
   roomSessions     RoomSession[]
